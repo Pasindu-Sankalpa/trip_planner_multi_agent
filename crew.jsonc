@@ -1,0 +1,140 @@
+{
+  // Display name for this crew
+  "name": "simple_multi_agent",
+
+  // Agents to include — each must have a matching agents/<name>.jsonc file
+  "agents": [
+    "destination_expert",
+    "lodging_planner",
+    "route_planner",
+    "dining_planner",
+    "itinerary_planner"
+  ],
+
+  // Task definitions — executed in order for sequential process
+  "tasks": [
+    {
+      // Task identifier
+      "name": "attractions_task",
+
+      // What the task should accomplish
+      // Use {placeholder} inputs here; crewai run prompts for missing values
+      "description": "List about 3 attractions per day worth visiting in {destination} for a {days}-day trip. For each one give the name, a one-line description, the area or neighbourhood, opening hours if known, and the suggested visit time.",
+
+      // Clear definition of what the output should look like
+      "expected_output": "A numbered list of attractions with description, area, opening hours and suggested visit time.",
+
+      // Optional task guardrail(s) validate output before completion
+      // Use "guardrail" for one rule or "guardrails" for many
+      // Failed guardrails retry up to guardrail_max_retries times
+      // "guardrail": "Every factual claim needs context support.",
+      // "guardrails": [
+      //   "Every factual claim must be supported by context.",
+      //   "The answer must match the expected output format."
+      // ],
+      // "guardrail_max_retries": 2,
+
+      // Advanced task options:
+      // Docs: https://docs.crewai.com/concepts/tasks
+      // "type": "ConditionalTask",
+      // "condition": { "python": "my_project.conditions.should_run" },
+      // "output_json": { "python": "my_project.models.ReportOutput" },
+      // "output_pydantic": null,
+      // "response_model": null,
+      // "converter_cls": { "python": "my_project.converters.CustomConverter" },
+      // "markdown": false,
+      // "input_files": { "brief": "data/brief.txt" },
+      // "security_config": {},
+
+      // Which agent handles this task
+      "agent": "destination_expert",
+
+      // Save this task's result to a file (folders are created as needed)
+      "output_file": "trip_output/1_attractions.md"
+
+      // "tools": [],
+      // "human_input": false,
+      // "async_execution": false
+    },
+    {
+      "name": "lodging_task",
+      "description": "Using the attractions list, find ONE budget-friendly, well-rated place to stay in {destination} for the whole {days}-day trip. It should be close to most of the attractions or to a main public transport station.\nGive: the name, area/address, approximate price per night, guest rating, why it is a good choice, and the nearest transport station.\nEnd your answer with one line that says exactly 'Breakfast included: Yes' or 'Breakfast included: No'.",
+      "expected_output": "Details of one recommended place to stay, ending with a 'Breakfast included: Yes' or 'Breakfast included: No' line.",
+      "agent": "lodging_planner",
+
+      // Earlier tasks whose outputs this task reads
+      "context": ["attractions_task"],
+      "output_file": "trip_output/2_lodging.md"
+    },
+    {
+      "name": "route_task",
+      "description": "Using the attractions list and the hotel location, split the attractions into {days} days, grouping nearby places on the same day.\nFor each day, give the visiting order, starting and ending at the hotel. For every leg of the journey (hotel -> stop 1 -> stop 2 ... -> hotel), state the best transport option (walk, bus, metro/train, tram, ferry or taxi), the line or route number if known, and the approximate travel time.",
+      "expected_output": "A route plan for each day, listing every leg with its transport mode, line (if known) and approximate travel time.",
+      "agent": "route_planner",
+      "context": ["attractions_task", "lodging_task"],
+      "output_file": "trip_output/3_routes.md"
+    },
+    {
+      "name": "dining_task",
+      "description": "First, find the 'Breakfast included' line in the hotel details.\n- If breakfast IS included: plan ONLY lunch and dinner for each day.\n- If breakfast is NOT included: plan breakfast, lunch and dinner for each day.\nBegin your answer by stating which meals you are planning and why.\nFor each meal, recommend a local dish to try and a restaurant or food area near where the traveller will be at that time, based on that day's route. Use different dishes across the trip so the traveller tries a variety of local food.",
+      "expected_output": "A statement of which meals are planned, then a meal plan for each day with a dish and a place for each meal.",
+      "agent": "dining_planner",
+      "context": ["lodging_task", "route_task"],
+      "output_file": "trip_output/4_dining.md"
+    },
+    {
+      "name": "itinerary_task",
+      "description": "Combine all your team's work into a complete {days}-day schedule for {destination}.\nStart with a trip overview: the hotel's name, area, price per night and whether breakfast is included.\nThen, for each day, give a timed schedule from morning to evening that includes: each attraction in the planned route order, how to travel between stops (from the route plan), and each meal at its planned place (from the dining plan). If a meal spot is not on the route, add a short note on how to get there.\nEnd with 3-5 practical tips (transport passes, etiquette, etc.).\nOnly use the attractions, hotel, routes and meal spots your team recommended.",
+      "expected_output": "A complete day-by-day itinerary in Markdown, with a heading for each day and a time for each activity, meal and journey.",
+      "agent": "itinerary_planner",
+      "context": ["attractions_task", "lodging_task", "route_task", "dining_task"],
+      "output_file": "trip_output/5_full_itinerary.md"
+    }
+  ],
+
+  // Execution process
+  // "sequential" — tasks run in order, each receiving prior task outputs
+  // "hierarchical" — a manager agent delegates tasks (requires manager_llm)
+  "process": "sequential",
+
+  // Enable verbose logging during execution
+  "verbose": true,
+
+  // Enable crew memory — persists context and learnings across tasks
+  "memory": false,
+
+  // Automatically plan the execution strategy before running tasks
+  // "planning": false,
+
+  // LLM for the planning step (used when planning is true)
+  // "planning_llm": "openai/gpt-4o",
+
+  // LLM for the manager agent (required when process is "hierarchical")
+  // "manager_llm": "openai/gpt-4o",
+
+  // Crew-level LLM fields also accept object form for custom endpoints
+  // "chat_llm": {"model": "llama3", "provider": "ollama", "base_url": "http://localhost:11434"},
+
+  // Advanced crew options:
+  // Docs: https://docs.crewai.com/concepts/crews
+  // For hierarchical crews, manager_agent can reference an agents/<name>.jsonc file
+  // that is not included in the "agents" list.
+  // "manager_agent": "destination_expert",
+  // "before_kickoff_callbacks": [{"python": "my_project.callbacks.before_kickoff"}],
+  // "after_kickoff_callbacks": [{"python": "my_project.callbacks.after_kickoff"}],
+  // "function_calling_llm": "openai/gpt-4o-mini",
+  // "max_rpm": null,
+  // "cache": true,
+  // "knowledge_sources": [],
+  // "embedder": {},
+  // "output_log_file": "crew.log",
+  // "stream": false,
+  // "tracing": false,
+  // "security_config": {},
+
+  // Optional runtime input defaults.
+  // Use {placeholder} in agent or task text, for example:
+  // "description": "Research {topic} and write a brief"
+  // `crewai run` prompts for any placeholders missing from this object.
+  "inputs": {}
+}
