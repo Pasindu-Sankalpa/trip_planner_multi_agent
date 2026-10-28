@@ -79,7 +79,15 @@ gcloud config set project YOUR_PROJECT_ID
 gcloud auth application-default login
 ```
 
-Use the same project ID for `GOOGLE_CLOUD_PROJECT` in `.env`.
+Then create a `.env` file in the project root with the following content, using the same
+project ID for `GOOGLE_CLOUD_PROJECT`:
+
+```
+MODEL=gemini/gemini-3.8-flash
+GOOGLE_GENAI_USE_VERTEXAI=true
+GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID
+GOOGLE_CLOUD_LOCATION=global
+```
 
 ## Running
 
