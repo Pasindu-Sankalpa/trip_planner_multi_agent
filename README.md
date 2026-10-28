@@ -97,7 +97,3 @@ crewai run
 - `tools/` - Custom tools (Python)
 - `knowledge/` - Knowledge files for agents
 - `trip_output/` - Generated trip plans (created on first run, not committed)
-
-> **Note:** `custom:<name>` tool references execute `tools/<name>.py` as local
-> Python code when the crew loads. Only run crew projects from sources you
-> trust.
